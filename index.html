@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manager for a Day: Day 1</title>
+
+  <style>
+    /* =====================================================================
+       STYLES
+       1. Colours and base   2. Layout   3. Buttons and inputs
+       4. Question screen    5. Final screen
+       ===================================================================== */
+
+
+    /* ---------- 1. Colours and base ---------- */
+
+    :root {
+      --bg:   #0f172a;   /* page background */
+      --card: #1e293b;   /* card background */
+      --line: #334155;   /* borders and dividers */
+      --text: #f1f5f9;   /* main text */
+      --mute: #94a3b8;   /* secondary text */
+      --acc:  #38bdf8;   /* accent (buttons, progress bar) */
+      --good: #34d399;   /* best answer */
+      --mid:  #fbbf24;   /* partly right answer */
+      --bad:  #f87171;   /* risky answer and errors */
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin: 0.2em 0;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      margin: 0.2em 0 0.5em;
+    }
+
+    .mute  { color: var(--mute); }
+    .small { font-size: 0.9rem; }
+
+
+    /* ---------- 2. Layout ---------- */
+
+    main {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+
+    /* Strip above the question card: holds the clock */
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .clock {
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bar {
+      height: 8px;
+      background: var(--line);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar > div {
+      height: 100%;
+      background: var(--acc);
+      transition: width 0.3s;
+    }
+
+
+    /* ---------- 3. Buttons and inputs ---------- */
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .btn {
+      background: var(--acc);
+      color: #082f49;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      filter: brightness(1.1);
+    }
+
+    /* Outlined version, used for "Play again" */
+    .btn.alt {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    input[type=text] {
+      width: 100%;
+      margin: 8px 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #0b1222;
+      color: var(--text);
+    }
+
+    .err {
+      color: var(--bad);
+      min-height: 1.5em;   /* keeps the layout still when a message appears */
+    }
+
+
+    /* ---------- 4. Question screen ---------- */
+
+    /* Team banner at the top of each question */
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      background: #0b1222;
+      border-left: 5px solid var(--tc, var(--acc));   /* --tc is set per team in the HTML */
+      border-radius: 12px;
+    }
+
+    .team .ic { font-size: 2rem; }
+    .team b   { display: block; }
+
+    /* Small coloured team label, e.g. FRM */
+    .tag {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 1px 10px;
+      background: var(--tc);
+      color: #0b1222;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    /* Full team name, highlighted in the team's colour */
+    .team-name {
+      color: var(--tc);
+      font-weight: 800;
+    }
+
+    /* Answer buttons */
+    .opt {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 14px;
+      text-align: left;
+      background: #0b1222;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .opt:hover:enabled { border-color: var(--acc); }
+    .opt:disabled      { cursor: default; }
+
+    /* Colours applied after the player answers */
+    .opt.best   { border-color: var(--good); background: #064e3b55; }
+    .opt.ok     { border-color: var(--mid);  background: #78350f44; }
+    .opt.poor   { border-color: var(--bad);  background: #7f1d1d44; }
+    .opt.picked { outline: 2px solid var(--text); }
+
+    /* Feedback label ("Great call!" and so on) */
+    .fb b.g { color: var(--good); }
+    .fb b.m { color: var(--mid); }
+    .fb b.b { color: var(--bad); }
+
+    /* Optional list of figures under a question (e.g. fund returns) */
+    .facts {
+      margin: 0 0 12px;
+      padding: 10px 14px 10px 32px;
+      background: #0b1222;
+      border-radius: 12px;
+    }
+
+    /* Optional plain-English tip under a question */
+    .hint {
+      margin: 0 0 12px;
+      padding: 10px 14px;
+      background: #082f4955;
+      border-left: 4px solid var(--acc);
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
+
+
+    /* ---------- 5. Final screen ---------- */
+
+    /* Passport stamps */
+    .stamps {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .stamp {
+      padding: 6px 10px;
+      border: 2px dashed var(--tc);
+      border-radius: 12px;
+      color: var(--tc);
+      font-weight: 800;
+      transform: rotate(-3deg);
+    }
+
+    .stamp:nth-child(even) {
+      transform: rotate(3deg);
+    }
+
+    /* "Meet the teams" list */
+    .meet {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .meet li {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meet li:last-child {
+      border: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- The whole game is drawn into this element by the script below -->
+  <main id="app"></main>
+
+  <script>
+    "use strict";
+
+    /* =====================================================================
+       CONTENTS
+       1. Settings
+       2. Teams            (names, icons, colours, descriptions)
+       3. Questions        (the ten moments of the day)
+       4. Game state
+       5. Small helpers    (text tidying, email checks)
+       6. Screens          (start, question, finish)
+       7. Excel download   (builds a real .xlsx file with no libraries)
+       8. Start the game
+       ===================================================================== */
+
+
+    /* =====================================================================
+       1. SETTINGS
+       ===================================================================== */
+
+    const POINTS_BEST    = 100;   // best choice
+    const POINTS_PARTIAL = 50;    // partly right choice
+    const POINTS_POOR    = 0;     // risky choice
+
+    const SUBMIT_LABEL_NEXT = "Next moment";
+    const SUBMIT_LABEL_LAST = "Close the day";
+
+    // Which day this file is for. It appears on the start screen and as the sheet name in Excel.
+    // (The Day 1 and Day 2 files share all the same code. Only DAY_LABEL and QUESTIONS differ.)
+    const DAY_LABEL = "Day 1";
+
+
+    /* =====================================================================
+       2. TEAMS
+       To change a team's wording, edit it here. It updates everywhere.
+       "name" is the full team name (shown highlighted, followed by the abbreviation),
+       "what" is the longer plain-English description.
+       ===================================================================== */
+
+    const TEAMS = {
+      RMS: {
+        icon: "🎓",
+        color: "#a78bfa",
+        name: "Resource Management Section",
+        what: "We look after staff confirmation, professional certificates such as PPKM, and DOP (our HR site), plus the resources, budget and training that keep the department running."
+      },
+      OPRISK: {
+        icon: "🛡️",
+        color: "#fb923c",
+        name: "Operational Risk",
+        what: "We look for things that could go wrong, such as mistakes, broken processes, system failures or outside events, before they cause losses."
+      },
+      FMT: {
+        icon: "🖥️",
+        color: "#38bdf8",
+        name: "Financial Market Technology",
+        what: "We build and look after the computer systems that our treasury (money-handling) teams use every day."
+      },
+      DART: {
+        icon: "📊",
+        color: "#34d399",
+        name: "Data Analytics, Reporting and Technology",
+        what: "We look after the department's data and use it to find insights and make work more digital."
+      },
+      FRM: {
+        icon: "📈",
+        color: "#f472b6",
+        name: "Financial Risk Management",
+        what: "We keep an eye on how risky our investments are, check we stay within the rules, report any breach to senior management, and explain how our investments performed."
+      },
+      COMPLC: {
+        icon: "⚖️",
+        color: "#fbbf24",
+        name: "Compliance",
+        what: "We make sure everyone follows the rules, the laws and our code of conduct."
+      },
+      PMO: {
+        icon: "🗂️",
+        color: "#2dd4bf",
+        name: "Project Management Office",
+        what: "We are the project managers. We keep projects on time, on budget, and make sure everyone knows who is doing what."
+      }
+    };
+
+    // The order teams appear on the start screen, the passport and "Meet the teams"
+    const TEAM_ORDER = ["RMS", "OPRISK", "FMT", "DART", "FRM", "COMPLC", "PMO"];
+
+
+    /* =====================================================================
+       3. QUESTIONS
+       One entry per moment of the day, in the order they are played.
+
+         team         key from TEAMS above
+         time         the clock time shown at the top of the screen
+         title        short heading
+         scenario     the situation, in plain English
+         facts        (optional) a short list of figures shown under the scenario
+         hint         (optional) a plain-English tip for people outside the team
+         ask          (optional) the line above the answers. Default: "What would you do?"
+         hideTeamName (optional) true = the banner shows only the abbreviation. Use it when the
+                      full team name would give away the answer.
+         explanation  (optional) shown after answering. Used for any option without its own "why"
+         options      three or four choices, each with:
+                        text    what the player reads on the button
+                        points  POINTS_BEST, POINTS_PARTIAL or POINTS_POOR
+                        why     (optional) explanation for this particular choice
+
+       Rules to keep the scoring fair:
+         - Every question needs exactly ONE option worth POINTS_BEST.
+         - Ten questions at 100 points gives the 1,000 maximum.
+         - The order of the answers is shuffled every time, so the position of
+           the right answer does not matter.
+       ===================================================================== */
+
+    const QUESTIONS = [
+
+      // ---- 09:00  RMS ----
+      {
+        team: "RMS",
+        time: "09:00",
+        title: "What does RMS stand for?",
+        hideTeamName: true,
+        scenario: "You have just met the team that looks after staff paperwork, professional certificates and our HR site. What does RMS stand for?",
+        ask: "Which one is right?",
+        explanation: "RMS is the Resource Management Section. It looks after staff confirmation, professional certificates such as PPKM, and keeping DOP, our HR site, up to date.",
+        options: [
+          {
+            text: "Resort Management System",
+            points: POINTS_POOR
+          },
+          {
+            text: "Resource Management Section",
+            points: POINTS_BEST
+          },
+          {
+            text: "Reserve Management Section",
+            points: POINTS_POOR
+          },
+          {
+            text: "Resource Managerial & Staff Section",
+            points: POINTS_POOR
+          }
+        ]
+      },
+
+      // ---- 09:45  OPRISK ----
+      {
+        team: "OPRISK",
+        time: "09:45",
+        title: "Who manages operational risk?",
+        scenario: "Operational risk means the chance of losing something because of mistakes, broken processes, system failures or outside events. Who is responsible for managing it?",
+        ask: "Who is responsible?",
+        explanation: "Everyone. The Operational Risk team sets the framework and helps, but every person spots and reports problems in their own work.",
+        options: [
+          {
+            text: "The Operational Risk team only",
+            points: POINTS_POOR
+          },
+          {
+            text: "The Head of Department only",
+            points: POINTS_POOR
+          },
+          {
+            text: "IT and Compliance only",
+            points: POINTS_POOR
+          },
+          {
+            text: "Everyone in the Bank",
+            points: POINTS_BEST
+          }
+        ]
+      },
+
+      // ---- 10:30  FMT ----
+      {
+        team: "FMT",
+        time: "10:30",
+        title: "The frozen screen",
+        scenario: "This morning the screen our dealers use to move money freezes, and they need it now. Someone says: 'Just install the quick fix I found online!'",
+        hint: "Dealers are the colleagues who buy and sell investments for us. The 'live system' is the real one people are using right now.",
+        options: [
+          {
+            text: "Switch the dealers to the backup, tell everyone what's happening, then find and test a proper fix",
+            points: POINTS_BEST,
+            why: "Correct. Keep the business running first, then fix it carefully and test it before going back."
+          },
+          {
+            text: "Install the quick fix on the live system right now",
+            points: POINTS_POOR,
+            why: "An untested fix on a live system can turn a small problem into a big one."
+          },
+          {
+            text: "Restart it and hope it works",
+            points: POINTS_PARTIAL,
+            why: "It might work for now, but you won't know why it failed, so it will probably happen again."
+          }
+        ]
+      },
+
+      // ---- 11:15  DART ----
+      {
+        team: "DART",
+        time: "11:15",
+        title: "Sharing a sensitive report",
+        scenario: "You are about to share a report that contains confidential data.",
+        ask: "What should you do before sending it?",
+        explanation: "Sensitive data should only go to people who are allowed to see it, through the approved channel, and protected with a password. Sharing more than needed, or using whatever is convenient, is how data leaks happen.",
+        options: [
+          {
+            text: "Password-protect the file, check the recipients are allowed to see it, and use the approved sharing channel",
+            points: POINTS_BEST
+          },
+          {
+            text: "Send it through any convenient platform",
+            points: POINTS_POOR
+          },
+          {
+            text: "Share the whole dataset in case they need more information",
+            points: POINTS_POOR
+          },
+          {
+            text: "Remove the report title and send it without restrictions",
+            points: POINTS_POOR
+          }
+        ]
+      },
+
+      // ---- 12:00  COMPLC ----
+      {
+        team: "COMPLC",
+        time: "12:00",
+        title: "The free lunch",
+        scenario: "A company hoping to win our business invites you to a fancy lunch and offers you an expensive gift bag. The contract decision is next month.",
+        options: [
+          {
+            text: "Politely decline the gift and let Compliance know about the invitation",
+            points: POINTS_BEST,
+            why: "Correct. It protects you and keeps the decision fair, and our code of conduct is built around that."
+          },
+          {
+            text: "Accept, but keep it quiet",
+            points: POINTS_POOR,
+            why: "A gift from someone who wants our business can look like a bribe, even if you mean nothing by it."
+          },
+          {
+            text: "Accept the lunch and share the gift with your team",
+            points: POINTS_PARTIAL,
+            why: "Sharing doesn't fix it. The gift still came because of the contract."
+          }
+        ]
+      },
+
+      // ---- 13:00  FRM ----
+      {
+        team: "FRM",
+        time: "13:00",
+        title: "Over the limit",
+        scenario: "The most we are allowed to lend to Bank X (the limit) is RM100 million. After a sharp market movement, what we are exposed to has risen to RM107 million, and it has stayed above the limit for three working days.",
+        hint: "A 'counterparty' is a bank or company we deal with. A limit is a cap on how much we are exposed to it, like a spending limit on a card.",
+        ask: "What is the best next step?",
+        explanation: "A breach is a breach, whether it came from a new trade or a market move. Risk management makes sure breaches are spotted, escalated, investigated and fixed. Raising the limit just to fit the excess defeats the purpose of having a limit.",
+        options: [
+          {
+            text: "Wait until the next risk committee meeting, because the market caused it, not a new trade",
+            points: POINTS_POOR
+          },
+          {
+            text: "Stop monitoring it for now, because it will probably fix itself",
+            points: POINTS_POOR
+          },
+          {
+            text: "Escalate it following the limit rules, find the root cause, and propose ways to bring it back down",
+            points: POINTS_BEST
+          },
+          {
+            text: "Raise the limit straight away to match what we are exposed to now",
+            points: POINTS_POOR
+          }
+        ]
+      },
+
+      // ---- 14:00  COMPLC ----
+      {
+        team: "COMPLC",
+        time: "14:00",
+        title: "A new rule is coming",
+        scenario: "A new regulation starts next month. Nobody has updated our checklists.",
+        options: [
+          {
+            text: "Assume the old checklist still works",
+            points: POINTS_POOR,
+            why: "New rules usually change something. Skipping the check is how breaches happen."
+          },
+          {
+            text: "Compare the new rule with what we do today, update the checklist, and tell each team what changes for them",
+            points: POINTS_BEST,
+            why: "Correct. Turning rules into clear steps people can follow is what a compliance framework is for."
+          },
+          {
+            text: "Email everyone the new rule and leave them to work it out",
+            points: POINTS_PARTIAL,
+            why: "Better than nothing, but most people will not know what to change."
+          }
+        ]
+      },
+
+      // ---- 15:00  FRM ----
+      {
+        team: "FRM",
+        time: "15:00",
+        title: "How strong is Malaysia's credit rating?",
+        scenario: "Credit rating agencies grade how likely a borrower is to repay its debts. These are Malaysia's government ratings:",
+        facts: [
+          "Fitch: BBB+",
+          "S&P: A-",
+          "Moody's: A3"
+        ],
+        hint: "Think of it like school grades for borrowers. The higher the letters, the safer the borrower. Anything at BBB- or above (Baa3 for Moody's) is called 'investment grade'.",
+        ask: "How would you describe Malaysia's overall credit quality?",
+        explanation: "All three ratings are investment grade. S&P and Moody's put Malaysia in the 'A' range and Fitch is one step lower, so overall this is a solid investment-grade profile: strong market access, a diversified economy and adequate institutions, rather than the bottom edge of investment grade.",
+        options: [
+          {
+            text: "Speculative grade",
+            points: POINTS_POOR
+          },
+          {
+            text: "Lower investment grade",
+            points: POINTS_POOR
+          },
+          {
+            text: "Solid investment grade",
+            points: POINTS_BEST
+          },
+          {
+            text: "Non-investment grade",
+            points: POINTS_POOR
+          }
+        ]
+      },
+
+      // ---- 16:00  OPRISK ----
+      {
+        team: "OPRISK",
+        time: "16:00",
+        title: "The email to the wrong person",
+        scenario: "You accidentally send a confidential Treasury report to the wrong person.",
+        ask: "What should you do first?",
+        explanation: "Report it straight away through the proper channel so the right people can limit the damage. Hiding it or waiting only makes things worse, and early reporting is how problems stay small.",
+        options: [
+          {
+            text: "Recall the email and keep quiet",
+            points: POINTS_POOR
+          },
+          {
+            text: "Report it straight away through the proper channel",
+            points: POINTS_BEST
+          },
+          {
+            text: "Wait and see whether the person opens it",
+            points: POINTS_POOR
+          },
+          {
+            text: "Blame Outlook",
+            points: POINTS_POOR
+          }
+        ]
+      },
+
+      // ---- 17:00  PMO ----
+      {
+        team: "PMO",
+        time: "17:00",
+        title: "Just one more thing",
+        scenario: "A project is on track to finish on time. Then a senior person says: 'Can we just add one more feature?'",
+        options: [
+          {
+            text: "Say yes. It's only one small thing",
+            points: POINTS_POOR,
+            why: "Small extras add up. Soon the project is late and over budget, and nobody agreed to it."
+          },
+          {
+            text: "Say no, flat out",
+            points: POINTS_PARTIAL,
+            why: "Protects the plan, but the idea might be worth doing. Check it first."
+          },
+          {
+            text: "Check what it would cost in time and money, show the owner, and agree the change before updating the plan",
+            points: POINTS_BEST,
+            why: "Correct. Good project management says yes or no to changes with the facts on the table."
+          }
+        ]
+      }
+    ];
+
+
+    /* =====================================================================
+       4. GAME STATE
+       "app" is the page element we draw into.
+       "game" holds the current player's run. It is null on the start screen.
+         game.email     the player's email (lowercase, tidied)
+         game.index     which question we are on (0 = first)
+         game.options   this question's answers in the (shuffled) order shown
+         game.score     running total, never shown to the player
+         game.answered  true once they have picked an answer for this question
+       Nothing is stored in the browser, so a refresh starts a fresh game.
+       ===================================================================== */
+
+    const app = document.getElementById("app");
+    let game = null;
+
+
+    /* =====================================================================
+       5. SMALL HELPERS
+       ===================================================================== */
+
+    // Makes text safe to place inside HTML
+    function escapeHtml(text) {
+      const replacements = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+      return String(text).replace(/[&<>"]/g, (char) => replacements[char]);
+    }
+
+    // Sets the team colour used by the CSS (--tc) on an element
+    function teamColorStyle(teamKey) {
+      return `--tc:${TEAMS[teamKey].color}`;
+    }
+
+    // Lowercases, removes spaces and strips hidden control characters
+    function cleanEmail(text) {
+      const controlCharacters = new RegExp("[\\u0000-\\u001f\\u007f\\u2028\\u2029]", "g");
+      return String(text)
+        .replace(controlCharacters, "")
+        .replace(/\s+/g, "")
+        .toLowerCase();
+    }
+
+    // Returns an error message to show the player, or "" if the email is fine
+    function emailProblem(text) {
+      const email = cleanEmail(text);
+      const looksLikeEmail = /^[a-z0-9._%+'-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+      if (!email)                    return "Please enter your email address.";
+      if (email.length > 80)         return "That email looks too long.";
+      if (!looksLikeEmail.test(email)) return "Please enter a valid email, like name@bnm.gov.my.";
+      return "";
+    }
+
+    // Turns an email into a safe file name (used for the Excel download)
+    function fileNameFromEmail(email) {
+      const safe = cleanEmail(email)
+        .replace(/[^a-z0-9._@+'-]/g, "_")
+        .replace(/^[._]+|[._]+$/g, "");
+      return (safe || "player") + ".xlsx";
+    }
+
+    // "alex.tan@bnm.gov.my" becomes "Alex". Returns "" if it can't tell.
+    function firstNameFromEmail(email) {
+      const beforeAt = email.split("@")[0];
+      const firstPart = beforeAt.split(/[._+\-0-9]+/)[0];
+      if (!firstPart) return "";
+      return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+    }
+
+
+    /* =====================================================================
+       6. SCREENS
+       Each screen builds some HTML, puts it in "app", then attaches
+       click handlers to the buttons it created.
+       ===================================================================== */
+
+
+    /* ---------- Start screen ---------- */
+
+    function showStartScreen() {
+      game = null;
+
+      // One coloured label per team
+      const teamLabels = TEAM_ORDER.map((key) => `
+        <span class="tag" style="${teamColorStyle(key)}">${TEAMS[key].icon} ${key}</span>
+      `).join(" ");
+
+      app.innerHTML = `
+        <div class="card">
+          <div style="font-size:3rem">🏢</div>
+          <h1>Manager for a Day</h1>
+          <p><span class="tag" style="--tc:var(--acc)">${DAY_LABEL}</span></p>
+
+          <p>
+            Spend one working day, 9:00 to 17:00, running our department.
+            Ten things will land on your desk. Choose what you would do,
+            collect points, and meet the seven teams that keep everything running.
+          </p>
+
+          <p style="line-height:2">${teamLabels}</p>
+
+          <p class="mute small">
+            About 5 minutes. No finance knowledge needed.
+            Up to 100 points per moment, 1,000 in total.
+          </p>
+
+          <label for="email"><b>Your email address</b></label>
+          <input id="email" type="text" inputmode="email" maxlength="80"
+                 autocomplete="off" autocapitalize="none" spellcheck="false"
+                 placeholder="name@bnm.gov.my">
+          <p class="mute small" style="margin:0 0 8px">
+            Used only to name your results file. Nothing is sent anywhere.
+          </p>
+
+          <div class="err" id="error" role="alert"></div>
+          <button class="btn" id="start">Start my day</button>
+        </div>
+      `;
+
+      const emailInput = document.getElementById("email");
+
+      function startGame() {
+        const problem = emailProblem(emailInput.value);
+        if (problem) {
+          document.getElementById("error").textContent = problem;
+          emailInput.focus();
+          return;
+        }
+        game = {
+          email: cleanEmail(emailInput.value),
+          index: 0,
+          score: 0,
+          answered: false
+        };
+        showQuestion();
+      }
+
+      document.getElementById("start").onclick = startGame;
+      emailInput.onkeydown = (event) => {
+        if (event.key === "Enter") startGame();
+      };
+      emailInput.focus();
+    }
+
+
+    /* ---------- Question screen ---------- */
+
+    // Returns a shuffled copy of a list (the original is left alone)
+    function shuffled(list) {
+      const copy = list.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function showQuestion() {
+      const question = QUESTIONS[game.index];
+      const team = TEAMS[question.team];
+      game.answered = false;
+      game.options = shuffled(question.options);
+
+      const progressPercent = (game.index / QUESTIONS.length) * 100;
+
+      // Banner title: the full team name (highlighted), then the abbreviation.
+      // A question can set hideTeamName: true when the full name would give away its answer.
+      const abbreviationTag = `<span class="tag" style="${teamColorStyle(question.team)}">${question.team}</span>`;
+      const teamTitle = question.hideTeamName
+        ? abbreviationTag
+        : `<span class="team-name">${escapeHtml(team.name)}</span> ${abbreviationTag}`;
+
+      const answerButtons = game.options.map((option, position) => `
+        <button class="opt" data-k="${position}">${escapeHtml(option.text)}</button>
+      `).join("");
+
+      // Optional extras: a list of figures and a plain-English tip
+      const factsHtml = question.facts
+        ? `<ul class="facts">${question.facts.map((fact) => `<li>${escapeHtml(fact)}</li>`).join("")}</ul>`
+        : "";
+      const hintHtml = question.hint
+        ? `<p class="hint">💡 <b>In plain English:</b> ${escapeHtml(question.hint)}</p>`
+        : "";
+
+      app.innerHTML = `
+        <div class="top">
+          <span class="clock">🕘 ${question.time}</span>
+        </div>
+        <div class="bar"><div style="width:${progressPercent}%"></div></div>
+
+        <div class="card">
+
+          <!-- Team banner: who we are meeting at this stop -->
+          <div class="team" style="${teamColorStyle(question.team)}">
+            <span class="ic">${team.icon}</span>
+            <div>
+              <b>
+                ${teamTitle}
+              </b>
+              <span class="small mute">${escapeHtml(team.what)}</span>
+            </div>
+          </div>
+
+          <h2>${escapeHtml(question.title)}</h2>
+          <p>${escapeHtml(question.scenario)}</p>
+          ${factsHtml}
+          ${hintHtml}
+          <p class="mute small">${escapeHtml(question.ask || "What would you do?")}</p>
+
+          ${answerButtons}
+
+          <!-- Feedback is placed here after the player answers -->
+          <div id="feedback"></div>
+        </div>
+      `;
+
+      app.querySelectorAll(".opt").forEach((button) => {
+        button.onclick = () => answerQuestion(Number(button.dataset.k));
+      });
+    }
+
+    // Which CSS class colours an answer button, based on its points
+    function answerClass(points) {
+      if (points === POINTS_BEST)    return "best";
+      if (points === POINTS_PARTIAL) return "ok";
+      return "poor";
+    }
+
+    // Called when the player clicks an answer
+    function answerQuestion(chosenPosition) {
+      if (game.answered) return;          // ignore double clicks
+      game.answered = true;
+
+      const question = QUESTIONS[game.index];
+      const chosen = game.options[chosenPosition];
+      const best = game.options.find((option) => option.points === POINTS_BEST);
+      const isLastQuestion = game.index === QUESTIONS.length - 1;
+
+      // Score is kept quietly. It is never shown on screen.
+      game.score += chosen.points;
+
+      // Colour every answer so the player can see which was best
+      app.querySelectorAll(".opt").forEach((button, position) => {
+        button.disabled = true;
+        button.classList.add(answerClass(game.options[position].points));
+        if (position === chosenPosition) button.classList.add("picked");
+      });
+
+      // Short label above the explanation (no points shown)
+      let label;
+      if (chosen.points === POINTS_BEST)         label = '<b class="g">Great call!</b>';
+      else if (chosen.points === POINTS_PARTIAL) label = '<b class="m">Partly right.</b>';
+      else                                       label = '<b class="b">Not quite.</b>';
+
+      // The explanation: this choice's own "why", otherwise the question's general one
+      const explanation = chosen.why || question.explanation || "";
+
+      // If they did not pick the best answer, remind them what it was
+      const bestAnswerNote = chosen.points === POINTS_BEST
+        ? ""
+        : `<p class="small mute">Best answer: ${escapeHtml(best.text)}</p>`;
+
+      document.getElementById("feedback").innerHTML = `
+        <div class="fb" style="margin-top:14px">
+          ${label}
+          <p>${escapeHtml(explanation)}</p>
+          ${bestAnswerNote}
+          <button class="btn" id="next">${isLastQuestion ? SUBMIT_LABEL_LAST : SUBMIT_LABEL_NEXT}</button>
+        </div>
+      `;
+
+      const nextButton = document.getElementById("next");
+      nextButton.onclick = () => {
+        if (isLastQuestion) {
+          showFinishScreen();
+        } else {
+          game.index += 1;
+          showQuestion();
+        }
+      };
+      nextButton.focus();
+    }
+
+
+    /* ---------- Finish screen ---------- */
+
+    // Note: the score is deliberately NOT shown here. It only goes into the Excel file.
+    function showFinishScreen() {
+      const firstName = firstNameFromEmail(game.email);
+      const greeting = firstName ? `, ${escapeHtml(firstName)}` : "";
+
+      // Passport stamps (one per team)
+      const stamps = TEAM_ORDER.map((key) => `
+        <span class="stamp" style="${teamColorStyle(key)}">${TEAMS[key].icon} ${TEAMS[key].name} (${key})</span>
+      `).join("");
+
+      // "Meet the teams" list
+      const teamList = TEAM_ORDER.map((key) => `
+        <li>
+          <span style="font-size:1.8rem">${TEAMS[key].icon}</span>
+          <div>
+            <b><span class="team-name" style="${teamColorStyle(key)}">${escapeHtml(TEAMS[key].name)}</span> <span class="tag" style="${teamColorStyle(key)}">${key}</span></b><br>
+            <span class="small mute">${escapeHtml(TEAMS[key].what)}</span>
+          </div>
+        </li>
+      `).join("");
+
+      app.innerHTML = `
+        <div class="card" style="text-align:center">
+          <div style="font-size:3rem">🏆</div>
+          <h1>Day complete${greeting}!</h1>
+
+          <p>
+            Thanks for running the department for a day. Download your results
+            file and hand it to a member of staff, who will check it for you.
+          </p>
+
+          <button class="btn" id="download">⬇ Download my Excel results</button>
+
+          <p class="small mute" style="margin:18px 0 0">Your passport: all 7 teams visited</p>
+          <div class="stamps">${stamps}</div>
+
+          <button class="btn alt" id="again">Play again</button>
+        </div>
+
+        <div class="card">
+          <h2>Meet the teams</h2>
+          <ul class="meet">${teamList}</ul>
+        </div>
+      `;
+
+      document.getElementById("download").onclick = downloadResults;
+      document.getElementById("again").onclick = showStartScreen;
+    }
+
+
+    /* =====================================================================
+       7. EXCEL DOWNLOAD
+       Builds a genuine .xlsx file in the browser with no libraries.
+       An .xlsx is a zip file containing a few small XML files, so we
+       (a) write those XML files and (b) pack them into a zip.
+
+       What the file contains: one sheet named after the day ("Day 1" or "Day 2") with two columns,
+       Email and Total Score. To add a column, edit the two lists passed to
+       buildSheetXml() inside buildWorkbook(), and adjust the column widths.
+       ===================================================================== */
+
+    const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+
+
+    /* ---------- The files that make up the workbook ---------- */
+
+    const CONTENT_TYPES_XML = XML_HEADER + `
+      <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+        <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+        <Default Extension="xml" ContentType="application/xml"/>
+        <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+        <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+        <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+      </Types>`;
+
+    const ROOT_RELS_XML = XML_HEADER + `
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+      </Relationships>`;
+
+    // The sheet is named after the day ("Day 1" or "Day 2") so the files are easy to tell apart
+    function workbookXml(sheetName) {
+      return XML_HEADER + `
+      <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <sheets>
+          <sheet name="${escapeXml(sheetName)}" sheetId="1" r:id="rId1"/>
+        </sheets>
+      </workbook>`;
+    }
+
+    const WORKBOOK_RELS_XML = XML_HEADER + `
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+        <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+      </Relationships>`;
+
+    // Cell style 0 = normal. Cell style 1 = white bold text on a dark blue fill (the header row).
+    const STYLES_XML = XML_HEADER + `
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <fonts count="2">
+          <font><sz val="11"/><name val="Calibri"/></font>
+          <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+        </fonts>
+        <fills count="3">
+          <fill><patternFill patternType="none"/></fill>
+          <fill><patternFill patternType="gray125"/></fill>
+          <fill><patternFill patternType="solid"><fgColor rgb="FF0F4C75"/></patternFill></fill>
+        </fills>
+        <borders count="1">
+          <border><left/><right/><top/><bottom/><diagonal/></border>
+        </borders>
+        <cellStyleXfs count="1">
+          <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+        </cellStyleXfs>
+        <cellXfs count="2">
+          <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+          <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+        </cellXfs>
+      </styleSheet>`;
+
+
+    /* ---------- Building the sheet ---------- */
+
+    // Makes text safe to place inside XML (also strips characters Excel rejects)
+    function escapeXml(text) {
+      return String(text)
+        .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    // 0 -> "A", 1 -> "B", and so on (enough for up to 26 columns)
+    function columnLetter(index) {
+      return String.fromCharCode(65 + index);
+    }
+
+    // rows: a list of rows, each a list of cells (text or numbers).
+    // The first row is treated as the header and given the header style.
+    // widths: column widths, one number per column.
+    function buildSheetXml(rows, widths) {
+      const columnsXml = widths.map((width, i) =>
+        `<col min="${i + 1}" max="${i + 1}" width="${width}" customWidth="1"/>`
+      ).join("");
+
+      const rowsXml = rows.map((cells, rowIndex) => {
+        const cellsXml = cells.map((value, columnIndex) => {
+          const ref = columnLetter(columnIndex) + (rowIndex + 1);   // e.g. "A2"
+
+          if (rowIndex === 0) {                                      // header row
+            return `<c r="${ref}" t="inlineStr" s="1"><is><t>${escapeXml(value)}</t></is></c>`;
+          }
+          if (typeof value === "number") {                           // numbers stay numbers
+            return `<c r="${ref}"><v>${value}</v></c>`;
+          }
+          return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
+        }).join("");
+
+        return `<row r="${rowIndex + 1}">${cellsXml}</row>`;
+      }).join("");
+
+      return XML_HEADER +
+        `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+        `<cols>${columnsXml}</cols><sheetData>${rowsXml}</sheetData></worksheet>`;
+    }
+
+
+    /* ---------- Packing the files into a zip ---------- */
+
+    // Pre-computed table used to calculate a zip checksum (CRC-32)
+    const CRC_TABLE = (function () {
+      const table = [];
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) {
+          c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        table[n] = c >>> 0;
+      }
+      return table;
+    })();
+
+    function crc32(bytes) {
+      let crc = 0xFFFFFFFF;
+      for (let i = 0; i < bytes.length; i++) {
+        crc = CRC_TABLE[(crc ^ bytes[i]) & 255] ^ (crc >>> 8);
+      }
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    // Writes a number as a fixed count of bytes, smallest byte first (zip format)
+    function littleEndian(value, byteCount) {
+      const bytes = [];
+      for (let i = 0; i < byteCount; i++) {
+        bytes.push((value >>> (8 * i)) & 255);
+      }
+      return bytes;
+    }
+
+    const textToBytes = (text) => new TextEncoder().encode(text);
+
+    // files: a list of [pathInsideZip, textContent]. Returns a downloadable Blob.
+    // Files are stored without compression, which keeps this code short.
+    function buildZip(files) {
+      const parts = [];            // everything that will be written, in order
+      const directory = [];        // notes for the zip's table of contents
+      let offset = 0;
+
+      // Zip stores the file time and date in a compact 16-bit form
+      const now = new Date();
+      const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+      const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+
+      // Each file: a small header, the file name, then the file's data
+      files.forEach(([path, text]) => {
+        const nameBytes = textToBytes(path);
+        const dataBytes = textToBytes(text);
+        const checksum = crc32(dataBytes);
+
+        const header = [].concat(
+          littleEndian(0x04034b50, 4),            // "local file header" marker
+          littleEndian(20, 2),                    // version needed
+          littleEndian(0x0800, 2),                // flags: names are UTF-8
+          littleEndian(0, 2),                     // no compression
+          littleEndian(dosTime, 2),
+          littleEndian(dosDate, 2),
+          littleEndian(checksum, 4),
+          littleEndian(dataBytes.length, 4),      // compressed size
+          littleEndian(dataBytes.length, 4),      // original size
+          littleEndian(nameBytes.length, 2),
+          littleEndian(0, 2)                      // no extra field
+        );
+
+        parts.push(new Uint8Array(header), nameBytes, dataBytes);
+        directory.push({ nameBytes, checksum, size: dataBytes.length, offset });
+        offset += header.length + nameBytes.length + dataBytes.length;
+      });
+
+      // The zip's table of contents, written after all the files
+      const directoryStart = offset;
+      directory.forEach((entry) => {
+        const record = [].concat(
+          littleEndian(0x02014b50, 4),            // "central directory" marker
+          littleEndian(20, 2),                    // version made by
+          littleEndian(20, 2),                    // version needed
+          littleEndian(0x0800, 2),                // flags: names are UTF-8
+          littleEndian(0, 2),                     // no compression
+          littleEndian(dosTime, 2),
+          littleEndian(dosDate, 2),
+          littleEndian(entry.checksum, 4),
+          littleEndian(entry.size, 4),
+          littleEndian(entry.size, 4),
+          littleEndian(entry.nameBytes.length, 2),
+          littleEndian(0, 2),                     // extra field length
+          littleEndian(0, 2),                     // comment length
+          littleEndian(0, 2),                     // disk number
+          littleEndian(0, 2),                     // internal attributes
+          littleEndian(0, 4),                     // external attributes
+          littleEndian(entry.offset, 4)           // where this file starts
+        );
+        parts.push(new Uint8Array(record), entry.nameBytes);
+        offset += record.length + entry.nameBytes.length;
+      });
+
+      // Final marker that says where the table of contents is
+      const ending = [].concat(
+        littleEndian(0x06054b50, 4),
+        littleEndian(0, 2),
+        littleEndian(0, 2),
+        littleEndian(directory.length, 2),
+        littleEndian(directory.length, 2),
+        littleEndian(offset - directoryStart, 4),
+        littleEndian(directoryStart, 4),
+        littleEndian(0, 2)
+      );
+      parts.push(new Uint8Array(ending));
+
+      return new Blob(parts, {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+    }
+
+
+    /* ---------- The download itself ---------- */
+
+    function buildWorkbook(email, score) {
+      const sheetXml = buildSheetXml(
+        [
+          ["Email", "Total Score"],     // header row
+          [email, score]                // the player's row
+        ],
+        [34, 14]                        // column widths
+      );
+
+      return buildZip([
+        ["[Content_Types].xml",        CONTENT_TYPES_XML],
+        ["_rels/.rels",                ROOT_RELS_XML],
+        ["xl/workbook.xml",            workbookXml(DAY_LABEL)],
+        ["xl/_rels/workbook.xml.rels", WORKBOOK_RELS_XML],
+        ["xl/styles.xml",              STYLES_XML],
+        ["xl/worksheets/sheet1.xml",   sheetXml]
+      ]);
+    }
+
+    function downloadResults() {
+      const blob = buildWorkbook(game.email, game.score);
+
+      // Create a temporary link, click it to start the download, then tidy up
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileNameFromEmail(game.email);
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+        link.remove();
+      }, 1500);
+    }
+
+
+    /* =====================================================================
+       8. START THE GAME
+       ===================================================================== */
+
+    showStartScreen();
+  </script>
+</body>
+
+</html>
