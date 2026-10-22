@@ -597,14 +597,14 @@
             why: "Correct. Keep the business running first, then fix it carefully and test it before going back."
           },
           {
-            text: "Install the quick fix on the live system right now",
+            text: "Apply the proposed fix immediately so the dealers can continue using the main system",
             points: POINTS_POOR,
-            why: "An untested fix on a live system can turn a small problem into a big one."
+            why: "Restoring the main system quickly is important, but applying an untested fix could cause a larger or more difficult problem."
           },
           {
-            text: "Restart it and hope it works",
+            text: "Restart the system, monitor it closely, and investigate further if the problem returns",
             points: POINTS_PARTIAL,
-            why: "It might work for now, but you won't know why it failed, so it will probably happen again."
+            why: "This may restore service quickly, but it does not identify the cause and may only delay the problem."
           }
         ]
       },
@@ -614,25 +614,29 @@
         team: "DART",
         time: "11:15",
         title: "Sharing a sensitive report",
-        scenario: "You are about to share a report that contains confidential data.",
+        scenario: "You need to send a report containing confidential data to colleagues who are working on a time-sensitive request.",
         ask: "What should you do before sending it?",
-        explanation: "Sensitive data should only go to people who are allowed to see it, through the approved channel, and protected with a password. Sharing more than needed, or using whatever is convenient, is how data leaks happen.",
+        explanation: "Confidential information should only be shared with authorised recipients through an approved channel. Check that the report contains only the information they need and apply the required protection before sending it.",
         options: [
           {
-            text: "Password-protect the file, check the recipients are allowed to see it, and use the approved sharing channel",
-            points: POINTS_BEST
+            text: "Confirm that each recipient is authorised, include only the information they need, protect the file as required, and use the approved sharing channel",
+            points: POINTS_BEST,
+            why: "Correct. This checks access, limits unnecessary disclosure, protects the file, and uses an approved method of sharing."
           },
           {
-            text: "Send it through any convenient platform",
-            points: POINTS_POOR
+            text: "Send the report using the approved sharing channel and ask the recipients to confirm that they are authorised to access it",
+            points: POINTS_PARTIAL,
+            why: "Using the approved channel is important, but authorisation should be confirmed before the confidential report is sent."
           },
           {
-            text: "Share the whole dataset in case they need more information",
-            points: POINTS_POOR
+            text: "Send the complete report to the project group so everyone has the same information and can decide what is relevant",
+            points: POINTS_POOR,
+            why: "The recipients may be involved in the project, but they should only receive confidential information that they are authorised to see and need for their work."
           },
           {
-            text: "Remove the report title and send it without restrictions",
-            points: POINTS_POOR
+            text: "Remove identifying details from the filename and send the report through the usual team communication platform",
+            points: POINTS_POOR,
+            why: "Changing the filename does not protect the report's contents, and the usual team platform may not be approved for sharing confidential data."
           }
         ]
       },
@@ -667,26 +671,30 @@
         team: "FRM",
         time: "13:00",
         title: "Over the limit",
-        scenario: "The most we are allowed to lend to Bank X (the limit) is RM100 million. After a sharp market movement, what we are exposed to has risen to RM107 million, and it has stayed above the limit for three working days.",
-        hint: "A 'counterparty' is a bank or company we deal with. A limit is a cap on how much we are exposed to it, like a spending limit on a card.",
+        scenario: "The maximum exposure allowed for Bank X is RM100 million. Following a sharp market movement, the exposure has increased to RM107 million and has remained above the limit for three working days.",
+        hint: "A 'counterparty' is a bank or company we deal with. A limit is a cap on how much exposure we can have to it, similar to a spending limit on a card.",
         ask: "What is the best next step?",
-        explanation: "A breach is a breach, whether it came from a new trade or a market move. Risk management makes sure breaches are spotted, escalated, investigated and fixed. Raising the limit just to fit the excess defeats the purpose of having a limit.",
+        explanation: "An exposure above an approved limit must be managed regardless of whether it was caused by a new transaction or a market movement. The breach should be escalated, investigated and addressed in line with the limit-management process. Any change to the limit should be independently justified and approved, rather than used simply to accommodate the excess.",
         options: [
           {
-            text: "Wait until the next risk committee meeting, because the market caused it, not a new trade",
-            points: POINTS_POOR
+            text: "Continue monitoring the exposure and present it at the next risk committee meeting, as no new transaction caused the excess",
+            points: POINTS_PARTIAL,
+            why: "Ongoing monitoring is necessary, but waiting for the next scheduled meeting may not meet the required escalation timeline. A market-driven excess is still a limit breach."
           },
           {
-            text: "Stop monitoring it for now, because it will probably fix itself",
-            points: POINTS_POOR
+            text: "Escalate the breach according to the limit rules, investigate its cause and propose actions to bring the exposure back within the approved limit",
+            points: POINTS_BEST,
+            why: "Correct. This ensures the breach is reported promptly, understood and addressed through the appropriate governance process."
           },
           {
-            text: "Escalate it following the limit rules, find the root cause, and propose ways to bring it back down",
-            points: POINTS_BEST
+            text: "Ask the relevant business team to reduce the exposure and escalate the matter only if it remains above the limit after an agreed monitoring period",
+            points: POINTS_PARTIAL,
+            why: "Reducing the exposure is appropriate, but remediation should not replace formal escalation. The breach has already occurred and should be reported according to the limit rules."
           },
           {
-            text: "Raise the limit straight away to match what we are exposed to now",
-            points: POINTS_POOR
+            text: "Submit a temporary limit increase for approval, supported by the current exposure and the expectation that the market movement will reverse",
+            points: POINTS_POOR,
+            why: "A temporary increase may sometimes be considered through proper governance, but it should not be used solely to regularise an existing excess. The breach must first be escalated and assessed on its own merits."
           }
         ]
       },
